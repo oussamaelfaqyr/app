@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 import joblib
@@ -47,6 +45,14 @@ def get_route(lat1, lon1, lat2, lon2):
 st.title("🚌 CTM : Prédiction du Prix & Trajet Réel")
 
 st.header("1. Coordonnées géographiques")
+
+# Initialisation des variables dans session_state si elles n'existent pas
+if 'distance_km' not in st.session_state:
+    st.session_state.distance_km = 100.0  # Valeur par défaut
+if 'duree_h' not in st.session_state:
+    st.session_state.duree_h = 1.5  # Valeur par défaut
+if 'route_coords' not in st.session_state:
+    st.session_state.route_coords = None
 
 # Création de deux colonnes pour les villes et leurs coordonnées
 col1, col2 = st.columns(2)
@@ -121,11 +127,11 @@ if st.button("Calculer via API"):
 # Valeurs modifiables par l'utilisateur
 dist_input = st.number_input(
     "Distance (km)", min_value=0.0,
-    value=getattr(st.session_state, 'distance_km', 100.0)
+    value=st.session_state.distance_km
 )
 duree_input = st.number_input(
     "Durée (h)", min_value=0.0,
-    value=getattr(st.session_state, 'duree_h', 1.5)
+    value=st.session_state.duree_h
 )
 
 # Delta latitude/longitude
