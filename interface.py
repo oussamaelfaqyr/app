@@ -9,7 +9,7 @@ from streamlit_folium import folium_static
 
 # 1. Chargement du modèle et des noms de features
 model = joblib.load(r"modele_prediction_prix.pkl")
-feature_names = joblib.load(r"modele ai\features.pkl")
+feature_names = joblib.load(r"features.pkl")
 
 # 2. Connexion à l'API OpenRouteService
 API_KEY = '5b3ce3597851110001cf62486c68088f9551487cb1b076e8cce3ba84'
