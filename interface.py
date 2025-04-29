@@ -32,14 +32,19 @@ if os.path.exists(fichier_villes):
     if villes_df['longitude'].dtype == 'object':
         villes_df['longitude'] = villes_df['longitude'].str.replace(',', '.').astype(float)
 
-    # Création du dictionnaire des villes
+    # Création du dictionnaire pour accès rapide
     villes_dict = {
         row['cityname'].strip().lower(): (row['latitude'], row['longitude'])
         for _, row in villes_df.iterrows()
     }
+
+    # Liste des villes pour suggestions
+    liste_villes = sorted(villes_dict.keys())
+
 else:
     villes_df = pd.DataFrame(columns=['cityname', 'latitude', 'longitude'])
     villes_dict = {}
+    liste_villes = []
 
 
 # 4. Interface utilisateur
