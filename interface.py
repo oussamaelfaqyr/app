@@ -79,10 +79,28 @@ if lat_arr is None:
     lon_arr = st.number_input("Longitude Arrivée", key="lon_arr")
 
 # Enregistrement des nouvelles villes
+import openpyxl
+
+# Enregistrement des nouvelles villes dans un fichier Excel
 def enregistrer_ville(nom, lat, lon):
     if nom not in villes_dict and nom != "":
-        new_row = pd.DataFrame([{'cityname': nom, 'latitude': lat, 'longitude': lon}])
-        new_row.to_excel(fichier_villes, mode='a', header=not os.path.exists(fichier_villes), index=False)
+        # Vérifier si le fichier existe
+        if os.path.exists(fichier_villes):
+            # Charger le fichier existant
+            wb = openpyxl.load_workbook(fichier_villes)
+            ws = wb.active
+        else:
+            # Créer un nouveau fichier Excel si le fichier n'existe pas
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            # Ajouter les en-têtes de colonnes
+            ws.append(['cityname', 'latitude', 'longitude'])
+        
+        # Ajouter la nouvelle ligne avec les informations de la ville
+        ws.append([nom, lat, lon])
+        
+        # Sauvegarder le fichier Excel
+        wb.save(fichier_villes)
         st.success(f"✅ Ville enregistrée : {nom}")
 
 # Choix d'enregistrement des nouvelles coordonnées
