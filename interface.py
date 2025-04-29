@@ -59,11 +59,13 @@ if ville_arr == "":
     ville_arr = st.text_input("Nom de la ville d’arrivée (nouvelle)", key="ville_arr_custom").strip().lower()
 
 # Coordonnées
+# Coordonnées
 def get_coords(ville, role):
     if ville in villes_dict:
         return villes_dict[ville]
     else:
-        return None
+        return (None, None)  # Renvoie un tuple vide si la ville n'est pas trouvée
+
 
 lat_dep, lon_dep = get_coords(ville_dep, "Départ")
 lat_arr, lon_arr = get_coords(ville_arr, "Arrivée")
