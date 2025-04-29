@@ -15,9 +15,6 @@ API_KEY = '5b3ce3597851110001cf62486c68088f9551487cb1b076e8cce3ba84'
 client = openrouteservice.Client(key=API_KEY)
 
 # 3. Chargement fichier villes
-import pandas as pd
-import os
-
 fichier_villes = "bus_stops_data_complet.xlsx"
 
 if os.path.exists(fichier_villes):
@@ -46,7 +43,6 @@ else:
     villes_dict = {}
     liste_villes = []
 
-
 # 4. Interface utilisateur
 st.title("🚌 CTM : Prédiction du Prix & Trajet Réel")
 
@@ -67,23 +63,32 @@ def get_coords(ville, role):
     if ville in villes_dict:
         return villes_dict[ville]
     else:
-        lat = st.number_input(f"Latitude {role}", key=f"lat_{role}")
-        lon = st.number_input(f"Longitude {role}", key=f"lon_{role}")
-        return lat, lon
+        return None
 
 lat_dep, lon_dep = get_coords(ville_dep, "Départ")
 lat_arr, lon_arr = get_coords(ville_arr, "Arrivée")
 
+# S'affiche uniquement si la ville n'existe pas
+if lat_dep is None:
+    lat_dep = st.number_input("Latitude Départ", key="lat_dep")
+    lon_dep = st.number_input("Longitude Départ", key="lon_dep")
+if lat_arr is None:
+    lat_arr = st.number_input("Latitude Arrivée", key="lat_arr")
+    lon_arr = st.number_input("Longitude Arrivée", key="lon_arr")
+
 # Enregistrement des nouvelles villes
 def enregistrer_ville(nom, lat, lon):
     if nom not in villes_dict and nom != "":
-        new_row = pd.DataFrame([{'nom': nom, 'lat': lat, 'lon': lon}])
-        new_row.to_csv(fichier_villes, mode='a', header=not os.path.exists(fichier_villes), index=False)
+        new_row = pd.DataFrame([{'cityname': nom, 'latitude': lat, 'longitude': lon}])
+        new_row.to_excel(fichier_villes, mode='a', header=not os.path.exists(fichier_villes), index=False)
         st.success(f"✅ Ville enregistrée : {nom}")
 
+# Choix d'enregistrement des nouvelles coordonnées
 if st.button("💾 Enregistrer les nouvelles villes"):
-    enregistrer_ville(ville_dep, lat_dep, lon_dep)
-    enregistrer_ville(ville_arr, lat_arr, lon_arr)
+    if lat_dep is not None and lon_dep is not None:
+        enregistrer_ville(ville_dep, lat_dep, lon_dep)
+    if lat_arr is not None and lon_arr is not None:
+        enregistrer_ville(ville_arr, lat_arr, lon_arr)
 
 # Fonction route
 def get_route(lat1, lon1, lat2, lon2):
