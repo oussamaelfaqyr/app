@@ -5,6 +5,7 @@ import openrouteservice
 import folium
 from streamlit_folium import folium_static
 import os
+import openpyxl
 
 # 1. Chargement du modèle
 model = joblib.load(r"modele_prediction_prix.pkl")
@@ -22,6 +23,7 @@ if os.path.exists(fichier_villes):
 
     # Nettoyage des noms de colonnes
     villes_df.columns = [col.strip().lower() for col in villes_df.columns]
+    st.write(f"Colonnes après nettoyage : {villes_df.columns.tolist()}")  # Afficher les colonnes nettoyées
 
     # Conversion sécurisée des coordonnées
     if villes_df['latitude'].dtype == 'object':
@@ -43,6 +45,7 @@ else:
     villes_dict = {}
     liste_villes = []
 
+
 # 4. Interface utilisateur
 st.title("🚌 CTM : Prédiction du Prix & Trajet Réel")
 
@@ -59,27 +62,22 @@ if ville_arr == "":
     ville_arr = st.text_input("Nom de la ville d’arrivée (nouvelle)", key="ville_arr_custom").strip().lower()
 
 # Coordonnées
-# Coordonnées
 def get_coords(ville, role):
     if ville in villes_dict:
         return villes_dict[ville]
     else:
         return (None, None)  # Renvoie un tuple vide si la ville n'est pas trouvée
 
-
 lat_dep, lon_dep = get_coords(ville_dep, "Départ")
 lat_arr, lon_arr = get_coords(ville_arr, "Arrivée")
 
 # S'affiche uniquement si la ville n'existe pas
-if lat_dep is None:
+if lat_dep is None or lon_dep is None:
     lat_dep = st.number_input("Latitude Départ", key="lat_dep")
     lon_dep = st.number_input("Longitude Départ", key="lon_dep")
-if lat_arr is None:
+if lat_arr is None or lon_arr is None:
     lat_arr = st.number_input("Latitude Arrivée", key="lat_arr")
     lon_arr = st.number_input("Longitude Arrivée", key="lon_arr")
-
-# Enregistrement des nouvelles villes
-import openpyxl
 
 # Enregistrement des nouvelles villes dans un fichier Excel
 def enregistrer_ville(nom, lat, lon):
@@ -103,12 +101,9 @@ def enregistrer_ville(nom, lat, lon):
         wb.save(fichier_villes)
         st.success(f"✅ Ville enregistrée : {nom}")
 
-# Choix d'enregistrement des nouvelles coordonnées
 if st.button("💾 Enregistrer les nouvelles villes"):
-    if lat_dep is not None and lon_dep is not None:
-        enregistrer_ville(ville_dep, lat_dep, lon_dep)
-    if lat_arr is not None and lon_arr is not None:
-        enregistrer_ville(ville_arr, lat_arr, lon_arr)
+    enregistrer_ville(ville_dep, lat_dep, lon_dep)
+    enregistrer_ville(ville_arr, lat_arr, lon_arr)
 
 # Fonction route
 def get_route(lat1, lon1, lat2, lon2):
