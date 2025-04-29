@@ -1,0 +1,7 @@
+streamlit
+pandas
+scikit-learn
+openrouteservice
+folium
+streamlit-folium
+joblib
