@@ -5,32 +5,19 @@ import openrouteservice
 import folium
 from streamlit_folium import folium_static
 
-# 1. Chargement du modèle et des features
-model = joblib.load(r"modele_prediction_prix.pkl")
-feature_names = joblib.load(r"features.pkl")
-
-# 2. Chargement du fichier Excel contenant les villes
+# -------------------- Chargement des données --------------------
 @st.cache_data
 def load_city_data():
-    df = pd.read_excel("bus_stops_data_complet.xlsx")  # ⚠️ Remplace ce nom par ton vrai fichier
-    df['CityName'] = df['CityName'].str.strip().str.lower()
-    return df
+    return pd.read_excel("bus_stops_data_complet.xlsx")  # Assure-toi que le fichier est dans le dossier du script
 
 city_df = load_city_data()
 
-# 3. Fonction pour récupérer les coordonnées d’une ville
-def get_coords_by_city(city_name):
-    city_name = city_name.strip().lower()
-    match = city_df[city_df['CityName'] == city_name]
-    if not match.empty:
-        lat = float(str(match.iloc[0]['Latitude']).replace(',', '.'))
-        lon = float(str(match.iloc[0]['Longitude']).replace(',', '.'))
-        return lat, lon
-    return None, None
+# -------------------- Chargement du modèle --------------------
+model = joblib.load("modele_prediction_prix.pkl")
+feature_names = joblib.load("features.pkl")
 
-# 4. Connexion à l’API OpenRouteService
-API_KEY = '5b3ce3597851110001cf62486c68088f9551487cb1b076e8cce3ba84'
-client = openrouteservice.Client(key=API_KEY)
+# -------------------- Connexion API OpenRouteService --------------------
+client = openrouteservice.Client(key='5b3ce3597851110001cf62486c68088f9551487cb1b076e8cce3ba84')
 
 def get_route(lat1, lon1, lat2, lon2):
     try:
@@ -44,78 +31,83 @@ def get_route(lat1, lon1, lat2, lon2):
         st.error(f"❌ Erreur API OpenRouteService : {e}")
         return None, None
 
-# ----------------------------------------------------------------
+# -------------------- Interface utilisateur --------------------
 st.title("🚌 CTM : Prédiction du Prix & Trajet Réel")
 
-st.header("1. Sélection des villes")
-col1, col2 = st.columns(2)
-with col1:
-    ville_dep = st.text_input("Ville de départ", placeholder="Ex: Rabat")
-    lat_dep, lon_dep = get_coords_by_city(ville_dep)
-    if lat_dep is None or lon_dep is None:
-        st.warning("Ville non trouvée. Saisir les coordonnées :")
-        lat_dep = st.number_input("Latitude Départ", format="%.6f")
-        lon_dep = st.number_input("Longitude Départ", format="%.6f")
-with col2:
-    ville_arr = st.text_input("Ville d'arrivée", placeholder="Ex: Youssoufia")
-    lat_arr, lon_arr = get_coords_by_city(ville_arr)
-    if lat_arr is None or lon_arr is None:
-        st.warning("Ville non trouvée. Saisir les coordonnées :")
-        lat_arr = st.number_input("Latitude Arrivée", format="%.6f")
-        lon_arr = st.number_input("Longitude Arrivée", format="%.6f")
+# Saisie ville de départ
+st.header("1. Ville de départ")
+city_list = city_df['CityName'].dropna().unique().tolist()
+ville_dep = st.selectbox("Choisissez ou tapez le nom de la ville de départ :", options=sorted(city_list))
 
-st.header("2. Calcul distance et durée")
+ville_dep_coords = city_df[city_df['CityName'] == ville_dep][['Latitude', 'Longitude']].dropna()
+if not ville_dep_coords.empty:
+    lat_dep = float(str(ville_dep_coords.iloc[0]['Latitude']).replace(",", "."))
+    lon_dep = float(str(ville_dep_coords.iloc[0]['Longitude']).replace(",", "."))
+    st.success(f"📍 Coordonnées de départ : {lat_dep}, {lon_dep}")
+else:
+    st.warning("Ville non trouvée. Entrez manuellement :")
+    lat_dep = st.number_input("Latitude Départ", format="%.6f")
+    lon_dep = st.number_input("Longitude Départ", format="%.6f")
+
+# Saisie ville d’arrivée
+st.header("2. Ville d’arrivée")
+ville_arr = st.selectbox("Choisissez ou tapez le nom de la ville d’arrivée :", options=sorted(city_list))
+
+ville_arr_coords = city_df[city_df['CityName'] == ville_arr][['Latitude', 'Longitude']].dropna()
+if not ville_arr_coords.empty:
+    lat_arr = float(str(ville_arr_coords.iloc[0]['Latitude']).replace(",", "."))
+    lon_arr = float(str(ville_arr_coords.iloc[0]['Longitude']).replace(",", "."))
+    st.success(f"📍 Coordonnées d’arrivée : {lat_arr}, {lon_arr}")
+else:
+    st.warning("Ville non trouvée. Entrez manuellement :")
+    lat_arr = st.number_input("Latitude Arrivée", format="%.6f")
+    lon_arr = st.number_input("Longitude Arrivée", format="%.6f")
+
+# Calcul distance
+st.header("3. Calcul distance et durée")
 if st.button("Calculer via API"):
     dist, coords = get_route(lat_dep, lon_dep, lat_arr, lon_arr)
-    if dist is not None:
-        duree = dist / 60  # vitesse moyenne 60 km/h
+    if dist:
+        duree = dist / 60
         st.session_state.distance_km = dist
         st.session_state.duree_h = duree
         st.session_state.route_coords = coords
-        st.success(f"Distance réelle : {dist:.2f} km → Durée ≃ {duree:.2f} h")
+        st.success(f"📏 Distance : {dist:.2f} km → Durée ≃ {duree:.2f} h")
     else:
-        st.warning("Impossible de récupérer le trajet.")
+        st.warning("Impossible de récupérer les données de l’API.")
 
-# Entrée manuelle si besoin
-dist_input = st.number_input(
-    "Distance (km)", min_value=0.0,
-    value=getattr(st.session_state, 'distance_km', 100.0)
-)
-duree_input = st.number_input(
-    "Durée (h)", min_value=0.0,
-    value=getattr(st.session_state, 'duree_h', 1.5)
-)
+dist_input = st.number_input("Distance (km)", value=st.session_state.get('distance_km', 100.0))
+duree_input = st.number_input("Durée (h)", value=st.session_state.get('duree_h', 1.5))
 
-# Calcul du delta latitude/longitude
-delta_lat = lat_arr - lat_dep
-delta_lon = lon_arr - lon_dep
-
-st.header("3. Prédiction du Prix")
+# -------------------- Prédiction --------------------
+st.header("4. Prédiction du Prix")
 if st.button("Prédire le Prix"):
+    delta_lat = lat_arr - lat_dep
+    delta_lon = lon_arr - lon_dep
+
     X = pd.DataFrame(0, index=[0], columns=feature_names)
     X['Distance_km_reelle'] = dist_input
     X['Durée_heures'] = duree_input
     X['Delta_Latitude'] = delta_lat
     X['Delta_Longitude'] = delta_lon
 
-    # Encodage conditionnel (exemples)
-    if 'Ville_Depart_' + ville_dep.lower() in X.columns:
-        X['Ville_Depart_' + ville_dep.lower()] = 1
-    if 'Ville_Arrivee_' + ville_arr.lower() in X.columns:
-        X['Ville_Arrivee_' + ville_arr.lower()] = 1
+    if f"Ville_Depart_{ville_dep.lower()}" in X.columns:
+        X[f"Ville_Depart_{ville_dep.lower()}"] = 1
+    if f"Ville_Arrivee_{ville_arr.lower()}" in X.columns:
+        X[f"Ville_Arrivee_{ville_arr.lower()}"] = 1
 
     prix = model.predict(X)[0]
     st.success(f"💰 Prix prédit : {prix:.2f} MAD")
 
-    coords_trajet = getattr(st.session_state, 'route_coords', None)
+    # Carte
+    coords_trajet = st.session_state.get('route_coords', None)
     if coords_trajet:
-        center = [(lat_dep + lat_arr) / 2, (lon_dep + lon_arr) / 2]
+        center = [(lat_dep+lat_arr)/2, (lon_dep+lon_arr)/2]
         m = folium.Map(location=center, zoom_start=7)
-        folium.Marker([lat_dep, lon_dep], popup="Départ", icon=folium.Icon(color='green')).add_to(m)
-        folium.Marker([lat_arr, lon_arr], popup="Arrivée", icon=folium.Icon(color='red')).add_to(m)
-        folium.PolyLine(locations=[(lat, lon) for lon, lat in coords_trajet],
-                        weight=3, opacity=0.8).add_to(m)
-        st.header("🗺️ Trajet Réel")
+        folium.Marker([lat_dep, lon_dep], tooltip="Départ", icon=folium.Icon(color='green')).add_to(m)
+        folium.Marker([lat_arr, lon_arr], tooltip="Arrivée", icon=folium.Icon(color='red')).add_to(m)
+        folium.PolyLine(locations=[(lat, lon) for lon, lat in coords_trajet], color="blue").add_to(m)
+        st.header("🗺️ Trajet sur carte")
         folium_static(m, width=700, height=500)
     else:
-        st.info("Appuyez d’abord sur « Calculer via API » pour récupérer le trajet.")
+        st.info("Veuillez d’abord calculer le trajet pour voir la carte.")
