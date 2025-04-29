@@ -7,8 +7,8 @@ import folium
 from streamlit_folium import st_folium
 
 # --- Chargement du modèle et des features ---
-model = joblib.load("modele_ai/modele_prediction_prix.pkl")
-feature_names = joblib.load("modele_ai/features.pkl")
+model = joblib.load("modele_prediction_prix.pkl")
+feature_names = joblib.load("features.pkl")
 
 # --- Clé API OpenRouteService ---
 client = openrouteservice.Client(key="5b3ce3597851110001cf62486c68088f9551487cb1b076e8cce3ba84")
