@@ -29,6 +29,7 @@ API_KEY = '5b3ce3597851110001cf62486c68088f9551487cb1b076e8cce3ba84'
 client = openrouteservice.Client(key=API_KEY)
 
 # 4. Fonction pour récupérer distance et coordonnées du trajet
+@st.cache_data
 def get_route(lat1, lon1, lat2, lon2):
     try:
         coords = ((lon1, lat1), (lon2, lat2))  # (lon, lat) attendu
@@ -112,17 +113,27 @@ with col2:
         lon_arr = st.number_input("Longitude Arrivée", value=-8.533300, format="%.6f")
 
 st.header("2. Calcul distance et durée")
-if st.button("Calculer via API"):
-    dist, coords = get_route(lat_dep, lon_dep, lat_arr, lon_arr)
-    if dist is not None:
-        duree = dist / 60  # vitesse moyenne 60 km/h
-        # On stocke tout dans session_state
-        st.session_state.distance_km = dist
-        st.session_state.duree_h = duree
-        st.session_state.route_coords = coords
-        st.success(f"Distance réelle : {dist:.2f} km → Durée ≃ {duree:.2f} h")
-    else:
-        st.warning("Impossible de récupérer le trajet.")
+
+# Ne recalculer que si les coordonnées de départ ou d'arrivée ont changé
+if (lat_dep, lon_dep, lat_arr, lon_arr) != (getattr(st.session_state, 'lat_dep', None), getattr(st.session_state, 'lon_dep', None), getattr(st.session_state, 'lat_arr', None), getattr(st.session_state, 'lon_arr', None)):
+    if st.button("Calculer via API"):
+        dist, coords = get_route(lat_dep, lon_dep, lat_arr, lon_arr)
+        if dist is not None:
+            duree = dist / 60  # vitesse moyenne 60 km/h
+            # On stocke tout dans session_state
+            st.session_state.distance_km = dist
+            st.session_state.duree_h = duree
+            st.session_state.route_coords = coords
+            st.success(f"Distance réelle : {dist:.2f} km → Durée ≃ {duree:.2f} h")
+            # Sauvegarder les coordonnées pour éviter le recalcul
+            st.session_state.lat_dep = lat_dep
+            st.session_state.lon_dep = lon_dep
+            st.session_state.lat_arr = lat_arr
+            st.session_state.lon_arr = lon_arr
+        else:
+            st.warning("Impossible de récupérer le trajet.")
+else:
+    st.warning("Les coordonnées n'ont pas changé, utilisez l'API pour recalculer.")
 
 # Valeurs modifiables par l'utilisateur
 dist_input = st.number_input(
