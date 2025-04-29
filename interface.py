@@ -16,13 +16,25 @@ client = openrouteservice.Client(key=API_KEY)
 
 # 3. Chargement fichier villes
 fichier_villes = "bus_stops_data_complet.xlsx"
+
 if os.path.exists(fichier_villes):
     villes_df = pd.read_excel(fichier_villes)
-else:
-    villes_df = pd.DataFrame(columns=['nom', 'lat', 'lon'])
 
-villes_dict = {row['nom'].strip().lower(): (row['lat'], row['lon']) for _, row in villes_df.iterrows()}
-liste_villes = list(villes_dict.keys())
+    # On standardise les noms de colonnes
+    villes_df.columns = [col.strip().lower() for col in villes_df.columns]
+
+    # Conversion des coordonnées
+    villes_df['latitude'] = villes_df['latitude'].str.replace(',', '.').astype(float)
+    villes_df['longitude'] = villes_df['longitude'].str.replace(',', '.').astype(float)
+
+    # Dictionnaire {nom de ville en minuscule : (lat, lon)}
+    villes_dict = {
+        row['cityname'].strip().lower(): (row['latitude'], row['longitude'])
+        for _, row in villes_df.iterrows()
+    }
+else:
+    villes_df = pd.DataFrame(columns=['cityname', 'latitude', 'longitude'])
+    villes_dict = {}
 
 # 4. Interface utilisateur
 st.title("🚌 CTM : Prédiction du Prix & Trajet Réel")
