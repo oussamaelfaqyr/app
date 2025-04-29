@@ -15,19 +15,24 @@ API_KEY = '5b3ce3597851110001cf62486c68088f9551487cb1b076e8cce3ba84'
 client = openrouteservice.Client(key=API_KEY)
 
 # 3. Chargement fichier villes
+import pandas as pd
+import os
+
 fichier_villes = "bus_stops_data_complet.xlsx"
 
 if os.path.exists(fichier_villes):
     villes_df = pd.read_excel(fichier_villes)
 
-    # On standardise les noms de colonnes
+    # Nettoyage des noms de colonnes
     villes_df.columns = [col.strip().lower() for col in villes_df.columns]
 
-    # Conversion des coordonnées
-    villes_df['latitude'] = villes_df['latitude'].str.replace(',', '.').astype(float)
-    villes_df['longitude'] = villes_df['longitude'].str.replace(',', '.').astype(float)
+    # Conversion sécurisée des coordonnées
+    if villes_df['latitude'].dtype == 'object':
+        villes_df['latitude'] = villes_df['latitude'].str.replace(',', '.').astype(float)
+    if villes_df['longitude'].dtype == 'object':
+        villes_df['longitude'] = villes_df['longitude'].str.replace(',', '.').astype(float)
 
-    # Dictionnaire {nom de ville en minuscule : (lat, lon)}
+    # Création du dictionnaire des villes
     villes_dict = {
         row['cityname'].strip().lower(): (row['latitude'], row['longitude'])
         for _, row in villes_df.iterrows()
@@ -35,6 +40,7 @@ if os.path.exists(fichier_villes):
 else:
     villes_df = pd.DataFrame(columns=['cityname', 'latitude', 'longitude'])
     villes_dict = {}
+
 
 # 4. Interface utilisateur
 st.title("🚌 CTM : Prédiction du Prix & Trajet Réel")
