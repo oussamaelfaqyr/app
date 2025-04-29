@@ -17,7 +17,7 @@ client = openrouteservice.Client(key=API_KEY)
 # 3. Chargement fichier villes
 fichier_villes = "bus_stops_data_complet.xlsx"
 if os.path.exists(fichier_villes):
-    villes_df = pd.read_csv(fichier_villes)
+    villes_df = pd.read_excel(fichier_villes)
 else:
     villes_df = pd.DataFrame(columns=['nom', 'lat', 'lon'])
 
