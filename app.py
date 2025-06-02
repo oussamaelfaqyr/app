@@ -115,11 +115,11 @@ else:
     route_geom = st.session_state.get("geom", None)
 
     if route_geom:
-        m = folium.Map(location=[lat_dep, lon_dep], zoom_start=8)
+        m = folium.Map(location=[lat_dep, lon_dep], zoom_start=10)
         folium.Marker([lat_dep, lon_dep], tooltip="Départ").add_to(m)
         folium.Marker([lat_arr, lon_arr], tooltip="Arrivée").add_to(m)
         folium.GeoJson(route_geom, style_function=lambda x: {'color': 'blue'}).add_to(m)
-        st_folium(m, width=800, height=400)
+        st_folium(m, width=800, height=300)
     else:
         st.info("Carte affichée après calcul API.")
 
